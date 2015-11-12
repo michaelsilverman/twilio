@@ -192,9 +192,9 @@ function twilio_command($command = '', $data = array()) {
   if (($library = libraries_load(TWILIO_LIBRARY)) && !empty($library['loaded'])) {
 
     // Set our account_sid, auth_token, and number.
-    $account_sid = variable_get('twilio_account', FALSE);
-    $auth_token = variable_get('twilio_token', FALSE);
-    $number = variable_get('twilio_number', FALSE);
+    $account_sid = !empty($data['options']['twilio_account']) ? $data['options']['twilio_account'] : variable_get('twilio_account', FALSE);
+    $auth_token = !empty($data['options']['twilio_token']) ? $data['options']['twilio_token'] : variable_get('twilio_token', FALSE);
+    $number = !empty($data['options']['twilio_number']) ? $data['options']['twilio_number'] : variable_get('twilio_number', FALSE);
 
     // If we don't have one of our twilio variables don't bother doing anything.
     if (!$account_sid || !$auth_token || !$number) {
