@@ -10,49 +10,65 @@
 function twilio_admin_form($form, &$form_state) {
 
   // Detect the Twilio library and provide feedback to the user if not present.
-  if (module_exists('libraries') && function_exists('libraries_detect')) {
+  if (\Drupal::moduleHandler()->moduleExists('libraries') && function_exists('libraries_detect')) {
     $library = libraries_detect(TWILIO_LIBRARY);
     if (!$library['installed']) {
-      $twilio_readme_link = l(t('README.txt'), 'http://drupalcode.org/project/twilio.git/blob/refs/heads/7.x-1.x:/README.txt');
+      $twilio_readme_link = \Drupal::l(t('README.txt'), \Drupal\Core\Url::fromUri('http://drupalcode.org/project/twilio.git/blob/refs/heads/7.x-1.x:/README.txt'));
       $twilio_error_text = t('The Twilo library was not detected or installed correctly. Please review the installation instructions provided in the !link file', array('!link' => $twilio_readme_link));
       drupal_set_message($twilio_error_text, 'error');
     }
   }
 
-  $form['twilio_account'] = array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/twilio.settings.yml and config/schema/twilio.schema.yml.
+$form['twilio_account'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
     '#title' => t('Twilio Account SID'),
-    '#default_value' => variable_get('twilio_account'),
+    '#default_value' => \Drupal::config('twilio.settings')->get('twilio_account'),
     '#description' => t('Enter your Twilio account id'),
   );
-  $form['twilio_token'] = array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/twilio.settings.yml and config/schema/twilio.schema.yml.
+$form['twilio_token'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
     '#title' => t('Twilio Auth Token'),
-    '#default_value' => variable_get('twilio_token'),
+    '#default_value' => \Drupal::config('twilio.settings')->get('twilio_token'),
     '#description' => t('Enter your Twilio token id'),
   );
-  $form['twilio_number'] = array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/twilio.settings.yml and config/schema/twilio.schema.yml.
+$form['twilio_number'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
     '#title' => t('Twilio Phone Number'),
-    '#default_value' => variable_get('twilio_number'),
+    '#default_value' => \Drupal::config('twilio.settings')->get('twilio_number'),
     '#description' => t('Enter your Twilio phone number'),
   );
-  $form['twilio_long_sms'] = array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/twilio.settings.yml and config/schema/twilio.schema.yml.
+$form['twilio_long_sms'] = array(
     '#type' => 'radios',
     '#title' => t('Long SMS handling'),
     '#description' => t('How would you like to handle SMS messages longer than 160 characters.'),
     '#options' => array(t('Send multiple messages'), t('Truncate message to 160 characters')),
-    '#default_value' => variable_get('twilio_long_sms', TWILIO_SMS_LONG_MULTIPLE),
+    '#default_value' => \Drupal::config('twilio.settings')->get('twilio_long_sms'),
   );
   $form['twilio_registration_form'] = array(
     '#type' => 'radios',
     '#title' => t('Show mobile fields during user registration'),
     '#description' => t('Specify if the site should collect mobile information during registration.'),
     '#options' => array(t('Disabled'), t('Optional'), t('Required')),
-    '#default_value' => variable_get('twilio_registration_form', 0),
+    '#default_value' => \Drupal::config('twilio.settings')->get('twilio_registration_form'),
   );
 
   $form['twilio_country_codes_container'] = array(
@@ -63,10 +79,14 @@ function twilio_admin_form($form, &$form_state) {
     '#collapsed' => TRUE,
   );
 
-  $form['twilio_country_codes_container']['twilio_country_codes'] = array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/twilio.settings.yml and config/schema/twilio.schema.yml.
+$form['twilio_country_codes_container']['twilio_country_codes'] = array(
     '#type' => 'checkboxes',
     '#options' => twilio_country_codes(TRUE),
-    '#default_value' => variable_get('twilio_country_codes', array()),
+    '#default_value' => \Drupal::config('twilio.settings')->get('twilio_country_codes'),
   );
 
   // Expose the callback URLs to the user for convenience.

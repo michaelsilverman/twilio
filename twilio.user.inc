@@ -37,34 +37,48 @@ function twilio_user_load($users) {
 
 /**
  * Implements hook_user_insert().
+ *
+ * @FIXME
+ * The $edit and $category parameters are gone in Drupal 8. They have been left
+ * here in order to prevent 'undefined variable' errors, but they will never
+ * actually be passed to this hook. You'll need to modify this function and
+ * remove every reference to them.
  */
-function twilio_user_insert(&$edit, $account, $category) {
+
+function twilio_user_insert(\Drupal\user\UserInterface $account, $category, $edit = NULL) {
   twilio_user_save($edit, $account, $category);
 }
 
 /**
  * Implements hook_user_update().
+ *
+ * @FIXME
+ * The $edit and $category parameters are gone in Drupal 8. They have been left
+ * here in order to prevent 'undefined variable' errors, but they will never
+ * actually be passed to this hook. You'll need to modify this function and
+ * remove every reference to them.
  */
-function twilio_user_update(&$edit, $account, $category) {
+
+function twilio_user_update(\Drupal\user\UserInterface $account, $category, $edit = NULL) {
   twilio_user_save($edit, $account, $category);
 }
 
 /**
  * Implements hook_user_delete().
  */
-function twilio_user_delete($account) {
+function twilio_user_delete(\Drupal\user\UserInterface $account) {
   db_delete('twilio_user')
-    ->condition('uid', $account->uid)
+    ->condition('uid', $account->id())
     ->execute();
 }
 
 /**
  * Saves mobile number data to the {twilio_user} table in the database.
  */
-function twilio_user_save(&$edit, $account, $category) {
+function twilio_user_save(&$edit, \Drupal\user\UserInterface $account, $category) {
   if (($category == 'twilio') && isset($edit['twilio'])) {
     $number = (object) $edit['twilio'];
-    $number->uid = $account->uid;
+    $number->uid = $account->id();
 
     $primary_keys = array();
     if (isset($account->twilio_user['status'])) {
@@ -72,7 +86,7 @@ function twilio_user_save(&$edit, $account, $category) {
         $primary_keys = array('uid');
       }
     }
-    drupal_write_record('twilio_user', $number, $primary_keys);
+    \Drupal::database()->merge('twilio_user')->fields($number)->key($primary_keys)->execute();
 
     $edit['twilio']['number'] = NULL;
     $edit['twilio']['status'] = NULL;
@@ -82,12 +96,21 @@ function twilio_user_save(&$edit, $account, $category) {
 
 /**
  * Implements hook_user_login().
+ *
+ * @FIXME
+ * The $edit parameter is gone in Drupal 8. It has been left here in order to
+ * prevent 'undefined variable' errors, but it will never actually be passed to
+ * this hook. You'll need to modify this function and remove every reference to it.
  */
-function twilio_user_login(&$edit, $account) {
+
+function twilio_user_login(\Drupal\user\UserInterface $account, $edit = []) {
   // If the users mobile number is in the verification state let them know they
   // need to enter their verification code and link to their settings page.
   if (twilio_edit_access($account) && !empty($account->twilio_user) && $account->twilio_user['status'] == 1) {
-    $account_link = l(t("account settings page"), 'user/' . $account->uid . '/edit/twilio');
+    // @FIXME
+// l() expects a Url object, created from a route name or external URI.
+// $account_link = l(t("account settings page"), 'user/' . $account->uid . '/edit/twilio');
+
     drupal_set_message(t("You must confirm your phone number by entering the verification code sent to you via SMS. Go to the !link to enter your verification code.", array('!link' => $account_link)), 'warning');
   }
 }
@@ -97,7 +120,7 @@ function twilio_user_login(&$edit, $account) {
  * Implements hook_FORMID_form_alter().
  */
 function twilio_form_user_register_form_alter(&$form, &$form_state, $form_id) {
-  if ($twilio_registration_form = variable_get('twilio_registration_form', 0)) {
+  if ($twilio_registration_form = \Drupal::config('twilio.settings')->get('twilio_registration_form')) {
     if ($twilio_registration_form == 2) {
       $required = TRUE;
     }
@@ -148,7 +171,7 @@ function twilio_register_submit($form, &$form_state) {
     return;
   }
   else {
-    $account = user_load($form_state['values']['uid']);
+    $account = \Drupal::entityManager()->getStorage('user')->load($form_state['values']['uid']);
     twilio_user_send_confirmation($account, $form_state['values']['number'], $form_state['values']['countrycode']);
   }
 }
@@ -178,7 +201,10 @@ function twilio_user_send_confirmation($account, $number, $country) {
     'code' => $code,
   );
 
-  $account = user_save($account, array('twilio' => $data), 'twilio');
+  // @FIXME
+// user_save() is now a method of the user entity.
+// $account = user_save($account, array('twilio' => $data), 'twilio');
+
   $message = "Confirmation code: $code";
   twilio_send($number, $message, $country);
   return $account;

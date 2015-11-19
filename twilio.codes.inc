@@ -228,7 +228,11 @@ function twilio_country_codes($all = FALSE) {
   if ($all === TRUE) {
     return $codes;
   }
-  $codes_to_return = array_filter(variable_get('twilio_country_codes', array()));
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/twilio.settings.yml and config/schema/twilio.schema.yml.
+$codes_to_return = array_filter(\Drupal::config('twilio.settings')->get('twilio_country_codes'));
   if (empty($codes_to_return)) {
     return $codes;
   }

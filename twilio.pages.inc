@@ -8,7 +8,7 @@
  * Menu callback for adding and confirming a user's mobile number.
  */
 function twilio_user_settings($account) {
-  return drupal_get_form('twilio_user_settings_form', $account);
+  return \Drupal::formBuilder()->getForm('twilio_user_settings_form', $account);
 }
 
 /**
@@ -17,7 +17,7 @@ function twilio_user_settings($account) {
 function twilio_user_settings_form($form, &$form_state, $account) {
 
   if (isset($form_state['values']['account'])) {
-    $account = user_load($form_state['values']['account']->uid);
+    $account = \Drupal::entityManager()->getStorage('user')->load($form_state['values']['account']->uid);
   }
 
   $form['#prefix'] = '<div id="twilio-user-form">';
@@ -143,7 +143,7 @@ function twilio_user_settings_add_form_validate($form, &$form_state) {
  */
 function twilio_user_settings_add_form_submit($form, &$form_state, $account = NULL) {
   if (!$account) {
-    $account = user_load($form_state['values']['uid']);
+    $account = \Drupal::entityManager()->getStorage('user')->load($form_state['values']['uid']);
   }
   $account = twilio_user_send_confirmation($account, $form_state['values']['number'], $form_state['values']['countrycode']);
   $form_state['values']['account'] = $account;
@@ -159,7 +159,7 @@ function twilio_user_settings_add_form_submit($form, &$form_state, $account = NU
  */
 function twilio_user_settings_confirm_form_validate($form, &$form_state) {
   if ($form_state['clicked_button']['#value'] == t('Confirm number')) {
-    $account = user_load($form_state['values']['uid']);
+    $account = \Drupal::entityManager()->getStorage('user')->load($form_state['values']['uid']);
     if ($form_state['values']['confirm_code'] != $account->twilio_user['code']) {
       form_set_error('confirm_code', t('The confirmation code is invalid.'));
     }
@@ -173,10 +173,12 @@ function twilio_user_settings_confirm_form_validate($form, &$form_state) {
  * @see http://drupal.org/node/1354
  */
 function twilio_user_settings_confirm_form_submit($form, &$form_state) {
-  $account = user_load($form_state['values']['uid']);
+  $account = \Drupal::entityManager()->getStorage('user')->load($form_state['values']['uid']);
   if ($form_state['clicked_button']['#value'] == t('Delete & start over')) {
     twilio_user_delete($account);
-    $account = user_load($form_state['values']['uid'], TRUE);
+    $account = // @FIXME
+// To reset the user cache, use EntityStorageInterface::resetCache().
+\Drupal::entityManager()->getStorage('user')->load($form_state['values']['uid']);
     drupal_set_message(t('Your mobile information has been removed'), 'status');
   }
   else {
@@ -184,7 +186,10 @@ function twilio_user_settings_confirm_form_submit($form, &$form_state) {
       'number' => $account->twilio_user['number'],
       'status' => TWILIO_USER_CONFIRMED,
     );
-    $account = user_save($account, array('twilio' => $data), 'twilio');
+    // @FIXME
+// user_save() is now a method of the user entity.
+// $account = user_save($account, array('twilio' => $data), 'twilio');
+
     drupal_set_message(t('Your mobile number has been confirmed'), 'status');
   }
   $form_state['values']['account'] = $account;
@@ -204,9 +209,11 @@ function twilio_user_settings_reset_form_validate($form, &$form_state) {
  * @see http://drupal.org/node/1354
  */
 function twilio_user_settings_reset_form_submit($form, &$form_state) {
-  $account = user_load($form_state['values']['uid']);
+  $account = \Drupal::entityManager()->getStorage('user')->load($form_state['values']['uid']);
   twilio_user_delete($account);
-  $account = user_load($form_state['values']['uid'], TRUE);
+  $account = // @FIXME
+// To reset the user cache, use EntityStorageInterface::resetCache().
+\Drupal::entityManager()->getStorage('user')->load($form_state['values']['uid']);
   drupal_set_message(t('Your mobile information has been removed'), 'status');
   $form_state['values']['account'] = $account;
   $form_state['rebuild'] = TRUE;
