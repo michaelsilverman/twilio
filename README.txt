@@ -5,19 +5,16 @@
 
 Maintainers:
  * Arvin Singla (arvinsingla), arvin.singla@gmail.com
+ * Calvin Tyndall (sleepingmonk), higher.level@gmail.com
 
 The Twilio module provides integration with the Twilio cloud communication
 platform allowing for your Drupal site to integration Voice and SMS
-functionality. 
+functionality.
 
 The module currently provides the following functionality:
 
-- Rules event to act on incoming SMS message
-- Rules action to send an SMS message
-- Hook for incoming SMS messages
-- Hook for incoming voice calls
-- User object phone number storage and validation
-- Uses libraries api to manage the Twilio php library
+- SMS Message Outbound with media.
+- Uses composer to require Twilio SDK.
 
 Project homepage: http://drupal.org/project/twilio
 
@@ -25,21 +22,17 @@ Project homepage: http://drupal.org/project/twilio
 Dependencies
 ------------
 
-* Libraries API - http://www.drupal.org/project/libraries
-
-The Rules module (http://www.drupal.org/project/rules) is required to use the
-rules integration.
+Twilio SDK 5.3 (Installed via Composer.)
 
 
 Installation
 ------------
 
-1. Install the Twilio module as per (http://drupal.org/node/895232/)
-2. Download the Twilio php library from (http://www.twilio.com/docs/libraries).
-3. Extract the library in your sites/all/libraries folder and rename the
-   directory to 'twilio'.
-4. Visit 'admin/config/system/twilio' and enter your Twilio API information
-   found on the twilio dashboard 
+1. Install the Twilio module as per (https://www.drupal.org/node/1897420)
+2. If not installing module with Composer, see:
+    - https://www.drupal.org/docs/8/extending-drupal-8/installing-modules-composer-dependencies
+3. Visit 'admin/config/system/twilio' and enter your Twilio API information
+   found on the twilio dashboard.
 
 
 Documentation

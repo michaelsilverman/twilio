@@ -15,12 +15,12 @@ twilio.admin_test_form:
 twilio.receive_message:
   path: /twilio/sms
   defaults:
-    _controller: '\Drupal\twilio\Controller\DefaultController::twilio_receive_message'
+    _controller: '\Drupal\twilio\Controller\TwilioController::receiveMessage'
   requirements:
     _access: 'true'
 twilio.receive_voice:
   path: /twilio/voice
   defaults:
-    _controller: '\Drupal\twilio\Controller\DefaultController::twilio_receive_voice'
+    _controller: '\Drupal\twilio\Controller\TwilioController::receiveVoice'
   requirements:
     _access: 'true'

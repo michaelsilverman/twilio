@@ -1,16 +1,15 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\twilio\Form\TwilioAdminForm.
- */
-
 namespace Drupal\twilio\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\twilio\Controller\TwilioController;
 
+/**
+ * Admin form for Twilio config.
+ */
 class TwilioAdminForm extends ConfigFormBase {
 
   /**
@@ -45,81 +44,72 @@ class TwilioAdminForm extends ConfigFormBase {
     return ['twilio.settings'];
   }
 
-  public function buildForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
-
-    // Detect the Twilio library and provide feedback to the user if not present.
-    if (\Drupal::moduleHandler()->moduleExists('libraries') && function_exists('libraries_detect')) {
-      $library = libraries_detect(TWILIO_LIBRARY);
-      if (!$library['installed']) {
-        $twilio_readme_link = \Drupal::l(t('README.txt'), \Drupal\Core\Url::fromUri('http://drupalcode.org/project/twilio.git/blob/refs/heads/7.x-1.x:/README.txt'));
-        $twilio_error_text = t('The Twilo library was not detected or installed correctly. Please review the installation instructions provided in the !link file', [
-          '!link' => $twilio_readme_link
-          ]);
-        drupal_set_message($twilio_error_text, 'error');
-      }
-    }
+  /**
+   * {@inheritdoc}
+   */
+  public function buildForm(array $form, FormStateInterface $form_state) {
 
     $form['account'] = [
       '#type' => 'textfield',
       '#required' => TRUE,
-      '#title' => t('Twilio Account SID'),
-      '#default_value' => \Drupal::config('twilio.settings')->get('account'),
-      '#description' => t('Enter your Twilio account id'),
+      '#title' => $this->t('Twilio Account SID'),
+      '#default_value' => $this->config('twilio.settings')->get('account'),
+      '#description' => $this->t('Enter your Twilio account id'),
     ];
     $form['token'] = [
       '#type' => 'textfield',
       '#required' => TRUE,
-      '#title' => t('Twilio Auth Token'),
-      '#default_value' => \Drupal::config('twilio.settings')->get('token'),
-      '#description' => t('Enter your Twilio token id'),
+      '#title' => $this->t('Twilio Auth Token'),
+      '#default_value' => $this->config('twilio.settings')->get('token'),
+      '#description' => $this->t('Enter your Twilio token id'),
     ];
     $form['number'] = [
       '#type' => 'textfield',
       '#required' => TRUE,
-      '#title' => t('Twilio Phone Number'),
-      '#default_value' => \Drupal::config('twilio.settings')->get('number'),
-      '#description' => t('Enter your Twilio phone number'),
+      '#title' => $this->t('Twilio Phone Number'),
+      '#default_value' => $this->config('twilio.settings')->get('number'),
+      '#description' => $this->t('Enter your Twilio phone number'),
     ];
     $form['long_sms'] = [
       '#type' => 'radios',
-      '#title' => t('Long SMS handling'),
-      '#description' => t('How would you like to handle SMS messages longer than 160 characters.'),
+      '#title' => $this->t('Long SMS handling'),
+      '#description' => $this->t('How would you like to handle SMS messages longer than 160 characters.'),
       '#options' => [
-        t('Send multiple messages'),
-        t('Truncate message to 160 characters'),
+        $this->t('Send multiple messages'),
+        $this->t('Truncate message to 160 characters'),
       ],
-      '#default_value' => \Drupal::config('twilio.settings')->get('long_sms'),
+      '#default_value' => $this->config('twilio.settings')->get('long_sms'),
     ];
     $form['registration_form'] = [
       '#type' => 'radios',
-      '#title' => t('Show mobile fields during user registration'),
-      '#description' => t('Specify if the site should collect mobile information during registration.'),
+      '#title' => $this->t('Show mobile fields during user registration'),
+      '#description' => $this->t('Specify if the site should collect mobile information during registration.'),
       '#options' => [
-        t('Disabled'),
-        t('Optional'),
-        t('Required'),
+        $this->t('Disabled'),
+        $this->t('Optional'),
+        $this->t('Required'),
       ],
-      '#default_value' => \Drupal::config('twilio.settings')->get('registration_form'),
+      '#default_value' => $this->config('twilio.settings')->get('registration_form'),
     ];
 
     $form['twilio_country_codes_container'] = [
+      '#tree' => TRUE,
       '#type' => 'fieldset',
-      '#title' => t('Country codes'),
-      '#description' => t('Select the country codes you would like available, If none are selected all will be available.'),
+      '#title' => $this->t('Country codes'),
+      '#description' => $this->t('Select the country codes you would like available, If none are selected all will be available.'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     ];
     $form['twilio_country_codes_container']['country_codes'] = [
       '#type' => 'checkboxes',
-      '#options' => twilio_country_codes(TRUE),
-      '#default_value' => \Drupal::config('twilio.settings')->get('country_codes'),
+      '#options' => TwilioController::countryDialCodes(TRUE),
+      '#default_value' => $this->config('twilio.settings')->get('twilio_country_codes_container')['country_codes'],
     ];
-
     // Expose the callback URLs to the user for convenience.
     $form['twilio_callback_container'] = [
       '#type' => 'fieldset',
-      '#title' => t('Module callbacks'),
-      '#description' => t('Enter these callback addresses into your Twilio phone number configuration on the Twilio dashboard to allow your site to respond to incoming voice calls and SMS messages.'),
+      '#title' => $this->t('Module callbacks'),
+      '#description' => $this->t('Enter these callback addresses into your Twilio phone number configuration on the Twilio dashboard to allow your site to respond to incoming voice calls and SMS messages.'),
     ];
 
     // Initialize URL variables.
@@ -128,13 +118,13 @@ class TwilioAdminForm extends ConfigFormBase {
 
     $form['twilio_callback_container']['voice_callback'] = [
       '#type' => 'item',
-      '#title' => t('Voice request URL'),
+      '#title' => $this->t('Voice request URL'),
       '#markup' => '<p>' . $voice_callback . '</p>',
     ];
 
     $form['twilio_callback_container']['sms_callback'] = [
       '#type' => 'item',
-      '#title' => t('SMS request URL'),
+      '#title' => $this->t('SMS request URL'),
       '#markup' => '<p>' . $sms_callback . '</p>',
     ];
 
