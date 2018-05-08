@@ -12,15 +12,35 @@ twilio.admin_test_form:
     _form: \Drupal\twilio\Form\TwilioAdminTestForm
   requirements:
     _permission: 'administer twilio'
-twilio.receive_message:
+twilio.admin_send_voice_form:
+  path: /admin/config/system/twilio/test
+  defaults:
+    _title: 'Send Test voice call'
+    _form: \Drupal\twilio\Form\TwilioAdminSendVoiceForm
+  requirements:
+    _permission: 'administer twilio'
+twilio.admin_check_number_form:
+  path: /admin/config/system/twilio/test2
+  defaults:
+    _title: 'Check number'
+    _form: \Drupal\twilio\Form\TwilioAdminCheckNumberForm
+  requirements:
+    _permission: 'administer twilio'
+
+
+twilio.receive_text:
   path: /twilio/sms
   defaults:
-    _controller: '\Drupal\twilio\Controller\TwilioController::receiveMessage'
+    _controller: \Drupal\twilio\Controller\TwilioController::receiveText
   requirements:
-    _access: 'true'
+    _access: 'TRUE'
+
 twilio.receive_voice:
-  path: /twilio/voice
+  path: /twilio/receive_voice
   defaults:
-    _controller: '\Drupal\twilio\Controller\TwilioController::receiveVoice'
+    _controller: \Drupal\twilio\Controller\TwilioController::receiveVoice
   requirements:
-    _access: 'true'
+    _access: 'TRUE'
+
+
+

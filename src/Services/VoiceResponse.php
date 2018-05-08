@@ -2,43 +2,45 @@
 
 namespace Drupal\twilio\Services;
 
-use Drupal\twilio\Event\SendVoiceEvent;
 use Twilio\Rest\Client;
-use Twilio\Twiml;
 use Twilio\Exceptions\TwilioException;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\twilio\Event\SendTextEvent;
 use Drupal\twilio\Event\TwilioEvents;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\twilio\Services\Command;
 
 /**
  * Service class for Twilio API commands.
  */
-class Command {
+class VoiceRespone {
 
-  private $sid;
-  private $token;
-  private $number;
+//  private $sid;
+//  private $token;
+//  private $number;
   protected $event_dispatcher;
 
-  /**
-   * Initialize properties.
-   */
-  public function __construct() {
-    $this->sid = $this->getSid();
-    $this->token = $this->getToken();
-    $this->number = $this->getNumber();
-  }
 
 
-    /**
-     * {@inheritdoc}
+
+
+    /*
+     * @param LoggerChannelFactoryInterface $loggerFactory
      */
-    public static function create(ContainerInterface $container) {
-        return new static(
-            $container->get('event_dispatcher')
-        );
+    protected  $loggerFactory;
+
+    public function __construct(Command $command, LoggerChannelFactoryInterface $loggerFactory) {
+        $this->command = $command;
+        $this->loggerFactory = $loggerFactory;
     }
+    public static function create(ContainerInterface $container) {
+        $command = $container->get('twilio.command');
+        $loggerFactory = $container->get('logger.factory');
+        return new static($command, $loggerFactory);
+    }
+
+
+
 
 
   /**
@@ -102,6 +104,9 @@ class Command {
         'body' => $message,
       ];
     }
+    $sid = $this->command->getSid();
+    $auth = $this->command->getToken();
+    $number = $this->command->getNumber();
     $message['from'] = !empty($message['from']) ? $message['from'] : $this->number;
     if (empty($message['body'])) {
       throw new TwilioException("Message requires a body.");
@@ -112,12 +117,6 @@ class Command {
     $client = new Client($this->sid, $this->token);
     $client->messages->create($number, $message);
 
-    $event = new SendTextEvent($number, $message);
-
-      // Dispatch an event by specifying which event, and providing an event
-      // object that will be passed along to any subscribers.
-      $dispatcher = \Drupal::service('event_dispatcher');
-      $dispatcher->dispatch(TwilioEvents::SEND_TEXT_EVENT, $event);
   }
 
     /**
@@ -133,27 +132,20 @@ class Command {
      *     mediaUrl => absolute URL
      *   ].
      */
-    public function voiceCall(string $from_number, $to_number, $twiml_file) {
+    public function voiceCall(string $from_number='+19192960477', $to_number='+16308999711', $message) {
 
-        $client = new Client($this->sid, $this->token);
-  //      $client->calls->create($to_number, $from_number,
-  //          array("url" => "http://demo.twilio.com/docs/voice.xml")
-  //      );
-
-   //     $twiml = new Twiml();
-   //     $twiml->say('Hello World this is the message');
+        $client = new Client($this->getSid(), $this->getToken());
         $call = $client->calls->create(
-            $to_number, $from_number,
-        //    $twiml
-             array("url" => "http://2ab4264d.ngrok.io/sites/default/files/twiml/".$twiml_file.".xml")
-         //   array("url" => "http://demo.twilio.com/docs/voice.xml")
+            $this->getNumber(), $to_number,
+            array("url" => "http://demo.twilio.com/docs/voice.xml")
         );
-        $event = new SendVoiceEvent($to_number, $twiml_file);
+        $event = new SendTextEvent($to_number, $message);
 
         // Dispatch an event by specifying which event, and providing an event
         // object that will be passed along to any subscribers.
         $dispatcher = \Drupal::service('event_dispatcher');
-        $dispatcher->dispatch(TwilioEvents::SEND_VOICE_EVENT, $event);
+        $dispatcher->dispatch(TwilioEvents::SEND_TEXT_EVENT, $event);
+        echo $call->sid;
     }
 
 

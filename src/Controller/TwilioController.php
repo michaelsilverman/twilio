@@ -4,44 +4,93 @@ namespace Drupal\twilio\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Component\Utility\SafeMarkup;
+use Drupal\twilio\Entity\TwilioSMS;
+use Twilio\Rest\Client;
+use Drupal\twilio\Event\ReceiveTextEvent;
+use Drupal\twilio\Event\ReceiveVoiceEvent;
+use Drupal\twilio\Event\TwilioEvents;
+use Twilio\Twiml;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\twilio\Services\Command;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Default controller for the twilio module.
  */
 class TwilioController extends ControllerBase {
+    /*
+     * @param LoggerChannelFactoryInterface $loggerFactory
+     */
+    protected  $loggerFactory;
+
+    public function __construct(Command $command, LoggerChannelFactoryInterface $loggerFactory) {
+        $this->command = $command;
+        $this->loggerFactory = $loggerFactory;
+    }
+    public static function create(ContainerInterface $container) {
+        $command = $container->get('twilio.command');
+        $loggerFactory = $container->get('logger.factory');
+        return new static($command, $loggerFactory);
+    }
 
   /**
    * Handle incoming SMS message requests.
    *
    * @todo Needs Work.
    */
-  public function receiveMessage() {
-    if (!empty($_REQUEST['From']) && !empty($_REQUEST['Body']) && !empty($_REQUEST['ToCountry']) && twilio_command('validate')) {
-      $codes = $this->countryDialCodes();
-      $dial_code = $this->countryIsoToDialCodes($_REQUEST['ToCountry']);
-      if (empty($codes[$dial_code])) {
-        $this->logger('Twilio')->notice(
-          'A message was blocked from the country @country, due to your currrent country code settings.',
-          ['@country' => $_REQUEST['ToCountry']]
-        );
-        return;
-      }
-      $number = SafeMarkup::checkPlain(str_replace('+' . $dial_code, '', $_REQUEST['From']));
-      $number_twilio = !empty($_REQUEST['To']) ? SafeMarkup::checkPlain(str_replace('+', '', $_REQUEST['To'])) : '';
-      $message = SafeMarkup::checkPlain(htmlspecialchars_decode($_REQUEST['Body'], ENT_QUOTES));
-      // @todo: Support more than one media entry.
-      $media = !empty($_REQUEST['MediaUrl0']) ? $_REQUEST['MediaUrl0'] : '';
-      $options = [];
-      // Add the receiver to the options array.
-      if (!empty($_REQUEST['To'])) {
-        $options['receiver'] = SafeMarkup::checkPlain($_REQUEST['To']);
-      }
-      $this->logger('Twilio')->notice('An SMS message was sent from @number containing the message "@message"', [
-        '@number' => $number,
-        '@message' => $message,
-      ]);
-      $this->messageIncoming($number, $number_twilio, $message, $media, $options);
+  public function receiveText() {
+
+      $twilio_message = new TwilioSMS($_REQUEST);
+    if (!empty($twilio_message->getFrom()) && !empty($twilio_message->getMessage()) && !empty($twilio_message->getCountry())) { //} && twilio_command('validate')) {
+
+        $codes = $this->countryDialCodes();
+        $dial_code = $this->countryIsoToDialCodes($_REQUEST['ToCountry']);
+
+        $number = SafeMarkup::checkPlain(str_replace('+' . $dial_code, '', $twilio_message->getFrom()));
+        $number_twilio = !empty($_REQUEST['To']) ? SafeMarkup::checkPlain(str_replace('+', '', $twilio_message->getTo())) : '';
+        $message = SafeMarkup::checkPlain(htmlspecialchars_decode($twilio_message->getMessage(), ENT_QUOTES));
+
+
+        if (empty($codes[$dial_code])) {
+            $this->loggerFactory->get('twilio')->debug(
+            //    $this->logger('Twilio')->notice(
+                'A message was blocked from the country @country, due to your currrent country code settings.',
+                ['@country' => $_REQUEST['ToCountry']]
+            );
+            $markup = [
+                '#markup' => 'error on county code',
+                //   '#attached' => ['library' => ['client/index.custom']] ,
+            ];
+            return $markup;
+        }
+        // @todo: Support more than one media entry.
+        $media = !empty($_REQUEST['MediaUrl0']) ? $_REQUEST['MediaUrl0'] : '';
+        $options = [];
+        // Add the receiver to the options array.
+        if (!empty($_REQUEST['To'])) {
+            $options['receiver'] = SafeMarkup::checkPlain($_REQUEST['To']);
+        }
     }
+        $this->loggerFactory->get('twilio')->debug
+        ('An SMS message was sent from @number containing the message "@message"', [
+            //    $this->logger('Twilio')->notice('An SMS message was sent from @number containing the message "@message"', [
+            '@number' => $number,
+            '@message' => $message,
+        ]);
+
+        // Dispatch an event by specifying which event, and providing an event
+        // object that will be passed along to any subscribers.
+        // $twilio_message = new TwilioSMS($message);
+
+        $event = new ReceiveTextEvent($twilio_message);
+        $dispatcher = \Drupal::service('event_dispatcher');
+        $dispatcher->dispatch(TwilioEvents::RECEIVE_TEXT_EVENT, $event);
+      $markup = [
+          '#markup' => 'SMS Message receivedxxx',
+      ];
+
+      return $markup;
   }
 
   /**
@@ -50,19 +99,23 @@ class TwilioController extends ControllerBase {
    * @todo Needs Work.
    */
   public function receiveVoice() {
-    if (!empty($_REQUEST['From']) && twilio_command('validate', ['type' => 'voice'])) {
-      $number = SafeMarkup::checkPlain(str_replace('+1', '', $_REQUEST['From']));
-      $number_twilio = !empty($_REQUEST['To']) ? SafeMarkup::checkPlain(str_replace('+', '', $_REQUEST['To'])) : '';
-      $options = [];
-      if (!empty($_REQUEST['To'])) {
-        $options['receiver'] = SafeMarkup::checkPlain($_REQUEST['To']);
-      }
-      $this->logger('Twilio')->notice('A voice call from @number was received.', ['@number' => $number]);
-      $this->voiceIncoming($number, $number_twilio, $options);
-    }
-  }
+      $twilio_message = new TwilioSMS($_REQUEST);
+      $event = new ReceiveVoiceEvent($twilio_message);
+      $dispatcher = \Drupal::service('event_dispatcher');
+      $dispatcher->dispatch(TwilioEvents::RECEIVE_VOICE_EVENT, $event);
 
-  /**
+      $response = new Response();
+      $twiml = new Twiml();
+      $twiml->say('Hello World');
+      $gather = $twiml->gather(['input' => 'speech dtmf', 'timeout' => 3,
+          'numDigits' => 1, 'action' => '/twilio/test1']);
+      $gather->say('Please press 1 or say sales for sales.');
+
+      $response->setContent($twiml);
+      return $response;
+
+}
+    /**
    * Invokes twilio_message_incoming hook.
    *
    * @param string $number
@@ -76,7 +129,7 @@ class TwilioController extends ControllerBase {
    * @param array $options
    *   Options array.
    */
-  public function messageIncoming($number, $number_twilio, $message, array $media = array(), array $options = array()) {
+  public function xxmessageIncoming($number, $number_twilio, $message, array $media = array(), array $options = array()) {
     // Build our SMS array to be used by our hook and rules event.
     $sms = array(
       'number' => $number,
@@ -101,7 +154,7 @@ class TwilioController extends ControllerBase {
    * @param array $options
    *   Options array.
    */
-  public function voiceIncoming($number, $number_twilio, array $options = array()) {
+  public function xxvoiceIncoming($number, $number_twilio, array $options = array()) {
     $voice = array(
       'number' => $number,
       'number_twilio' => $number_twilio,

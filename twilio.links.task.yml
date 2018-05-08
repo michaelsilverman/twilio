@@ -8,3 +8,14 @@ twilio.admin_test_form:
   title: 'Send Test SMS message'
   weight: 0
   base_route: twilio.admin_form
+twilio.admin_send_voice_form:
+  route_name: twilio.admin_send_voice_form
+  title: 'Send Voice Message'
+  weight: 0
+  base_route: twilio.admin_form
+twilio.admin_check_number_form:
+  route_name: twilio.admin_check_number_form
+  title: 'Check Number'
+  weight: 0
+  base_route: twilio.admin_form
+
